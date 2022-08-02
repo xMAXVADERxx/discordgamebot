@@ -1,7 +1,6 @@
 import discord
 import json
 from discord.ext import commands
-from dotenv import load_dotenv
 import os
 
 extensions = ['cogs.play']
@@ -10,15 +9,16 @@ def check_prefix(bot, msg):
     base = ["g!"]
     return base
 
-#Dunder, because it looks nice
+#Dunder, for safety
 if __name__ == "__main__":
 
-
-
-    #Loading config (stored in a .env for Heroku support)
-    load_dotenv()
-    TOKEN = os.getenv("TOKEN")
-
+    try:
+        with open("config/cfg.json","r") as file:
+            config = json.load(file)
+            file.close()
+        print(config)
+    except FileNotFoundError:
+        print("Config file doesn't exist, please run config.py")
     #define bot
     bot = commands.Bot(command_prefix=check_prefix, case_insensitive=True)
     
@@ -29,4 +29,4 @@ if __name__ == "__main__":
     async def on_ready():
         print("Bot Online!")
 
-    bot.run(TOKEN)
+    bot.run(config["TOKEN"])

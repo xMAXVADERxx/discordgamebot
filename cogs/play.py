@@ -8,7 +8,10 @@ class Play(commands.Cog):
     @commands.command(name="tictactoe",aliases=["ttt","nc"])
     async def tictactoe(self, ctx):
         await ctx.send("WIP!")
-
+        grid = [['E','E','E','E','E','E','E','E','E'],['E','E','E','E','E','E','E','E','E'],['E','E','E','E','E','E','E','E','E'],['E','E','E','E','E','E','E','E','E'],['E','E','E','E','E','E','E','E','E'],['E','E','E','E','E','E','E','E','E'],['E','E','E','E','E','E','E','E','E'],['E','E','E','E','E','E','E','E','E'],['E','E','E','E','E','E','E','E','E']]
+        for row in grid:
+            await ctx.send(row)
+    
 def setup(bot):
     bot.add_cog(Play(bot))
 
