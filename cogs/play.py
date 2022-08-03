@@ -7,6 +7,10 @@ class Play(commands.Cog):
     
     @commands.command(name="tictactoe",aliases=["ttt","nc"])
     async def tictactoe(self, ctx):
+        await ctx.send("WIP!") 
+    
+    @commands.command(name="ConnectFour",aliases=["c4","connect"])
+    async def coonnectfour(self, ctx):
         await ctx.send("WIP!")
         grid = [['E','E','E','E','E','E','E','E','E'],['E','E','E','E','E','E','E','E','E'],['E','E','E','E','E','E','E','E','E'],['E','E','E','E','E','E','E','E','E'],['E','E','E','E','E','E','E','E','E'],['E','E','E','E','E','E','E','E','E'],['E','E','E','E','E','E','E','E','E'],['E','E','E','E','E','E','E','E','E'],['E','E','E','E','E','E','E','E','E']]
         for row in grid:
