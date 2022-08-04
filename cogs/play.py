@@ -10,11 +10,15 @@ class Play(commands.Cog):
         await ctx.send("WIP!") 
     
     @commands.command(name="ConnectFour",aliases=["c4","connect"])
-    async def coonnectfour(self, ctx):
+    async def connectfour(self, ctx):
         await ctx.send("WIP!")
         grid = [['E','E','E','E','E','E','E','E','E'],['E','E','E','E','E','E','E','E','E'],['E','E','E','E','E','E','E','E','E'],['E','E','E','E','E','E','E','E','E'],['E','E','E','E','E','E','E','E','E'],['E','E','E','E','E','E','E','E','E'],['E','E','E','E','E','E','E','E','E'],['E','E','E','E','E','E','E','E','E'],['E','E','E','E','E','E','E','E','E']]
+        msg = ""
         for row in grid:
-            await ctx.send(row)
+            for chr in row:
+                msg += chr
+            msg += '\n'
+        await ctx.send(msg)
     
 def setup(bot):
     bot.add_cog(Play(bot))
