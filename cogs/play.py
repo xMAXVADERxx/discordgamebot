@@ -116,7 +116,7 @@ class Play(commands.Cog):
         grid = data["grid"]
 
         if data["turn"] == 0:
-            data["grid"] = 4
+            data["turn"] = 4
             Container.updateGame(payload.message_id, json.dumps(data))
 
             if data["playerOne"] == payload.member.id:
@@ -135,7 +135,7 @@ class Play(commands.Cog):
                     data["winner"] = payload.member.id      
 
         elif data["turn"] == 1:
-            data["grid"] = 4
+            data["turn"] = 4
             Container.updateGame(payload.message_id, json.dumps(data))
             if data["playerTwo"] == payload.member.id:
                 for x in range(3):
@@ -179,7 +179,7 @@ class Play(commands.Cog):
         for row in grid:
             if 0 in row:
                 draw = 0
-        if draw == 1:
+        if draw == 1 and data["turn"] != 3:
             data["turn"] = 3
             data["winner"] = 1
 
