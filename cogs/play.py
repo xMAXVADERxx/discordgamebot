@@ -245,7 +245,7 @@ class Play(commands.Cog):
     @commands.hybrid_command(name="tictactoe",aliases=["ttt","nc"])
     @app_commands.describe(player2="Enter the id of the second player")
     async def tictactoe(self, ctx: commands.Context, player2: str = "0"):
-        if type(ctx.interaction) != NoneType:
+        if type(ctx.interaction) != type(None):
             await ctx.interaction.response.send_message(f"{ctx.author.mention} ran TicTacToe")
         else:
             await ctx.send(f"{ctx.author.mention} ran TicTacToe")
