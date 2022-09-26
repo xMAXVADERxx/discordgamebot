@@ -1,7 +1,6 @@
 #Visual Studio Stuff
 from codecs import ignore_errors
 from re import X
-from types import NoneType
 
 import discord
 from discord.ext import commands
