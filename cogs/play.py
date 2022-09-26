@@ -1,12 +1,19 @@
+#Visual Studio Stuff
 from codecs import ignore_errors
 from re import X
+from types import NoneType
+
 import discord
 from discord.ext import commands
+from discord import app_commands
 import sqlite3
 import enum
 import json
 import math
 import random
+
+
+
 #handles the storing and management of games
 class GamesContainer:
     
@@ -17,7 +24,7 @@ class GamesContainer:
     con.commit()
 
     def __init__(self):
-        print("Initialised Container")
+        print("Initialised Game Container")
 
     #Adds game to SQL database
     def addGame(self, gameID, gameType, data='NULL'):
@@ -38,19 +45,19 @@ class GamesContainer:
 
 Container = GamesContainer()
 
+#Game list enumerator
 class Games(enum.Enum):
     TicTacToe = 1
 
 class Play(commands.Cog):
-    
-    
-    def __init__(self,bot):
-        self.bot = bot
 
+
+    def __init__(self,bot: commands.Bot):
+        self.bot: commands.Bot = bot
     #manually update TTT Grid Embed
     async def TTT_updateGrid(self, grid, msg):
+        #Grab Discord Embed for editing
         embedVar = msg.embeds[0]
-        newMsg = msg
         txt = ""
         for row in grid:
             for column in row:
@@ -115,6 +122,7 @@ class Play(commands.Cog):
        
         grid = data["grid"]
 
+        #NOTE For all Turn=4 and Update Game statements; Used to ensure game can't be modified in multiple processes at once, as it breaks the game
         if data["turn"] == 0:
             data["turn"] = 4
             Container.updateGame(payload.message_id, json.dumps(data))
@@ -128,6 +136,8 @@ class Play(commands.Cog):
                             #hideous
                             await self.TTT_updateGrid(grid, msg)
                             break
+                        else:
+                            data["turn"] = 0
                     except ValueError:
                         ignore_errors
                 if self.TTT_checkWin(grid, 1) == True:
@@ -145,6 +155,8 @@ class Play(commands.Cog):
                             data["turn"] = 0
                             await self.TTT_updateGrid(grid,msg)
                             break
+                        else:
+                            data["turn"] = 0
                     except ValueError:
                         ignore_errors
                 if self.TTT_checkWin(grid, 2) == True:
@@ -153,7 +165,10 @@ class Play(commands.Cog):
                     
             
         #If bot's turn generate random position
-        if data["turn"] == 1 and data["playerTwo"] == "0":
+        if data["turn"] == 1 and data["playerTwo"] == 0:
+
+            data["turn"] = 4
+            Container.updateGame(payload.message_id, json.dumps(data))
 
             #check for open spaces
             valid = True
@@ -216,10 +231,10 @@ class Play(commands.Cog):
         data["grid"] = grid
         Container.updateGame(payload.message_id, json.dumps(data))
 
+    #Reaction listener, checks for reactions
     @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload):
         if payload.member.id != self.bot.user.id:
-            chnl = await self.bot.fetch_channel(payload.channel_id)
             record = Container.grabGame(payload.message_id)
             game = record[1]
 
@@ -227,14 +242,18 @@ class Play(commands.Cog):
             if game == Games.TicTacToe.value:
                 await self.checkTTT(payload, record)
 
-    
-
-
-    @commands.command(name="tictactoe",aliases=["ttt","nc"])
-    async def tictactoe(self, ctx, player2="0"):
-        #format player 2 ID to fix other code
-        if len(player2) > 1:
+    @commands.hybrid_command(name="tictactoe",aliases=["ttt","nc"])
+    @app_commands.describe(player2="Enter the id of the second player")
+    async def tictactoe(self, ctx: commands.Context, player2: str = "0"):
+        if type(ctx.interaction) != NoneType:
+            await ctx.interaction.response.send_message(f"{ctx.author.mention} ran TicTacToe")
+        else:
+            await ctx.send(f"{ctx.author.mention} ran TicTacToe")
+        #format player 2 ID (Removes <@>)
+        if len(player2) > 1 and '@' in player2:
             player2 = int(player2[2:-1])
+        if int(player2) == self.bot.user.id:
+            player2 = 0
         grid = [[0,0,0],[0,0,0],[0,0,0]]
         msg = ""
         for x in range(3):
@@ -247,14 +266,13 @@ class Play(commands.Cog):
         for emoji in reactions:
             await id.add_reaction(emoji)
         #make data dict in format {grid, creator, player2, gameState (Used as turn counter [0-1] and game finished flag [2])}
-        dat = {"grid":grid, "playerOne":ctx.author.id,"playerTwo":player2,"turn":0, "winner":""}
+        dat = {"grid":grid, "playerOne":ctx.author.id,"playerTwo":int(player2),"turn":0, "winner":""}
         Container.addGame(gameID=id.id, gameType=Games.TicTacToe, data=json.dumps(dat))
 
     @commands.command(name="ConnectFour",aliases=["c4","connect"])
     async def connectfour(self, ctx):
         await ctx.send("WIP!")
-        
     
-def setup(bot):
-    bot.add_cog(Play(bot))
+async def setup(bot):
+    await bot.add_cog(Play(bot))
 
