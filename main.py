@@ -1,10 +1,8 @@
-import asyncio
 import discord
 import json
 from discord.ext import commands
-import os
-
-extensions = ['cogs.play']
+from cogs.account import AccountManager
+extensions = ['cogs.play','cogs.account']
 
 def check_prefix(bot, msg):
     base = ["g!"]
@@ -34,7 +32,14 @@ if __name__ == "__main__":
         print(f"Current ID: {bot.user.id}")
         print("Bot Online!")
         
-    
+    #used to add an entire server to the database; slow implementation and so depricated
+    # @bot.event
+    # async def on_guild_join(guild):
+    #     print(f"Joined {guild.name}, syncing database")
+    #     Manager = AccountManager()
+    #     for member in guild.members:
+    #         Manager.checkAccount(member.id)
+
     @bot.hybrid_command(name="sync", description="Used to sync commands, only runable by owner")
     async def sync(ctx: commands.Context):
         if ctx.author.id == 274620118795812864:

@@ -10,8 +10,7 @@ import enum
 import json
 import math
 import random
-
-
+from .account import AccountManager
 
 #handles the storing and management of games
 class GamesContainer:
@@ -53,6 +52,7 @@ class Play(commands.Cog):
 
     def __init__(self,bot: commands.Bot):
         self.bot: commands.Bot = bot
+        self.Manager = AccountManager()
     #manually update TTT Grid Embed
     async def TTT_updateGrid(self, grid, msg):
         #Grab Discord Embed for editing
@@ -141,7 +141,8 @@ class Play(commands.Cog):
                         ignore_errors
                 if self.TTT_checkWin(grid, 1) == True:
                     data["turn"] = 3
-                    data["winner"] = payload.member.id      
+                    data["winner"] = payload.member.id 
+                    self.Manager.updateAccountCoins(payload.member.id)     
 
         elif data["turn"] == 1:
             data["turn"] = 4
@@ -248,9 +249,11 @@ class Play(commands.Cog):
             await ctx.interaction.response.send_message(f"{ctx.author.mention} ran TicTacToe")
         else:
             await ctx.send(f"{ctx.author.mention} ran TicTacToe")
+        self.Manager.checkAccount(ctx.author.id)
         #format player 2 ID (Removes <@>)
         if len(player2) > 1 and '@' in player2:
             player2 = int(player2[2:-1])
+            self.Manager.checkAccount(ctx.author.id)
         if int(player2) == self.bot.user.id:
             player2 = 0
         grid = [[0,0,0],[0,0,0],[0,0,0]]
