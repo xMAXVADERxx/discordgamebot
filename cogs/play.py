@@ -142,7 +142,7 @@ class Play(commands.Cog):
                 if self.TTT_checkWin(grid, 1) == True:
                     data["turn"] = 3
                     data["winner"] = payload.member.id 
-                    self.Manager.updateAccountCoins(payload.member.id)     
+                    self.Manager.updateAccountCoins(payload.member.id, 150)     
 
         elif data["turn"] == 1:
             data["turn"] = 4
@@ -162,7 +162,7 @@ class Play(commands.Cog):
                 if self.TTT_checkWin(grid, 2) == True:
                     data["turn"] = 3
                     data["winner"] = payload.member.id
-                    
+                    self.Manager.updateAccountCoins(payload.member.id, 150)     
             
         #If bot's turn generate random position
         if data["turn"] == 1 and data["playerTwo"] == 0:
