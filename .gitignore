@@ -2,3 +2,4 @@
 /config
 /cogs/__pycache__
 games.db
+accounts.db
