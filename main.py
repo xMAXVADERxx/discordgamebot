@@ -31,14 +31,6 @@ if __name__ == "__main__":
             await bot.load_extension(extension)
         print(f"Current ID: {bot.user.id}")
         print("Bot Online!")
-        
-    #used to add an entire server to the database; slow implementation and so depricated
-    # @bot.event
-    # async def on_guild_join(guild):
-    #     print(f"Joined {guild.name}, syncing database")
-    #     Manager = AccountManager()
-    #     for member in guild.members:
-    #         Manager.checkAccount(member.id)
 
     @bot.hybrid_command(name="sync", description="Used to sync commands, only runable by owner")
     async def sync(ctx: commands.Context):

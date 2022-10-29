@@ -4,3 +4,4 @@
 games.db
 accounts.db
 .vscode
+*.pyc

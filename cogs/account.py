@@ -16,13 +16,16 @@ class AccountManager:
         self.cursor.execute('''CREATE TABLE IF NOT EXISTS accounts(accountID INTEGER PRIMARY KEY, coins INTEGER, vip INTEGER, data STRING)''')
         self.con.commit()
         print("Initialised account manager")
+
+        #default acct data format
+        self.defaultDict = {"tttwins":0,"tttdraws":0,"tttlosses":0,"c4wins":0,"c4draws":0,"c4losses":0}
     
     def checkAccount(self, accountID):
         self.cursor.execute(f'''SELECT * FROM accounts WHERE accountID = {accountID}''')
         account = self.cursor.fetchone()
         print(accountID)
         if account is None:
-            data = {"tttwins":0,"c4wins":0}
+            data = self.defaultDict
             data = json.dumps(data)
             self.cursor.execute(f'''INSERT INTO accounts VALUES({accountID},0,0,'{data}')''')
             self.con.commit()
@@ -32,7 +35,7 @@ class AccountManager:
         data = self.cursor.fetchone()
         if data is None:
             self.checkAccount(accountID)
-            return [accountID,0,0,{"tttwins":0,"c4wins":0}]
+            return [accountID,0,0,self.defaultDict]
         else:
             return data
 
@@ -53,8 +56,10 @@ class AccountManager:
 class Account(commands.Cog):
 
     def __init__(self, bot):
+        print("Initialising Account Command Cog")
         self.bot: commands.Bot = bot
         self.Manager = AccountManager()
+        print("Initialised Account Command Cog")
     
     @commands.hybrid_command(name="coins", alias=["balance","bal"])
     @app_commands.describe(member="The person you wish to see the balance of")
@@ -62,6 +67,20 @@ class Account(commands.Cog):
         if member is None:
             account = self.Manager.getAccount(ctx.author.id)
             await ctx.send(f"You have {account[1]} coins!")
+        else:
+            return
+
+    @commands.hybrid_command(name="stats", alias=["statistics","account"])
+    async def stats(self, ctx: commands.Context, member: str = None):
+        if member is None:
+            account = self.Manager.getAccount(ctx.author.id)
+            data = json.loads(account[3])
+            embedVar = discord.Embed(title=f"{ctx.author.display_name}'s Statistics:")
+            #formatting embedVar and adding data
+
+            embedVar.add_field(name="TicTacToe", value=f"Wins: {data['tttwins']}, Draws: {data['tttdraws']}, Losses: {data['tttlosses']}",inline=False)
+
+            await ctx.send(embed=embedVar)
         else:
             return
 

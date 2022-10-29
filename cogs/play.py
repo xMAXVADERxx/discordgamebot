@@ -6,11 +6,11 @@ import discord
 from discord.ext import commands
 from discord import app_commands
 import sqlite3
-import enum
-import json
-import math
-import random
+
+#import local modules
+from .games.enums import Games
 from .account import AccountManager
+from .games.tictactoe import Tictactoe
 
 #handles the storing and management of games
 class GamesContainer:
@@ -43,233 +43,36 @@ class GamesContainer:
 
 Container = GamesContainer()
 
-#Game list enumerator
-class Games(enum.Enum):
-    TicTacToe = 1
-
 class Play(commands.Cog):
 
 
     def __init__(self,bot: commands.Bot):
+        print("Initialising Play Command Cog")
+        #prepare bot reference and account manager module
         self.bot: commands.Bot = bot
         self.Manager = AccountManager()
-    #manually update TTT Grid Embed
-    async def TTT_updateGrid(self, grid, msg):
-        #Grab Discord Embed for editing
-        embedVar = msg.embeds[0]
-        txt = ""
-        for row in grid:
-            for column in row:
-                if column == 0:
-                    txt += ":white_large_square:"
-                elif column == 1:
-                    txt += ":white_check_mark:"
-                elif column == 2:
-                    txt += ":negative_squared_cross_mark:"
-            txt += '\n'
-        embedVar.description = txt
 
-        await msg.edit(embed=embedVar)
-        return
-
-    #check win condition
-    def TTT_checkWin(self, grid, player):
-        if player == 1:
-            notPlayer = 2
-        else:
-            notPlayer = 1
-        
-        #check rows
-        for row in grid:
-            if 0 not in row and notPlayer not in row:
-                return True
-        
-        #check columns
-        for x in range(3):
-            cnt = 0
-            for row in grid:
-                if row[x] == player:
-                    cnt += 1
-            if cnt == 3:
-                return True
-        
-        #check diagonals
-        cnt = 0
-        cntNeg = 0
-        for x in range(3):
-            if grid[x][x] == player:
-                cnt += 1
-            if grid[x][2-x] == player:
-                cntNeg += 1
-        if cnt == 3 or cntNeg == 3:
-            return True
-        
-        #if checks fail, no win
-        return False
-
-    async def checkTTT(self, payload, record):
-        data = json.loads(record[2])
-        #if game ended, don't bother doing anything else
-        if data["turn"] == 3:
-            return
-        
-        msg = payload.message_id
-        chnl = await self.bot.fetch_channel(payload.channel_id)
-        msg = await chnl.fetch_message(msg)
-
-        emojis = [['1️⃣','2️⃣','3️⃣'],['4️⃣','5️⃣','6️⃣'],['7️⃣','8️⃣','9️⃣']]
-       
-        grid = data["grid"]
-
-        #NOTE For all Turn=4 and Update Game statements; Used to ensure game can't be modified in multiple processes at once, as it breaks the game
-        if data["turn"] == 0:
-            data["turn"] = 4
-            Container.updateGame(payload.message_id, json.dumps(data))
-
-            if data["playerOne"] == payload.member.id:
-                for x in range(3):
-                    try:
-                        if grid[x][emojis[x].index(payload.emoji.name)] == 0:
-                            grid[x][emojis[x].index(payload.emoji.name)] = 1
-                            data["turn"] = 1
-                            #hideous
-                            await self.TTT_updateGrid(grid, msg)
-                            break
-                        else:
-                            data["turn"] = 0
-                    except ValueError:
-                        ignore_errors
-                if self.TTT_checkWin(grid, 1) == True:
-                    data["turn"] = 3
-                    data["winner"] = payload.member.id 
-                    self.Manager.updateAccountCoins(payload.member.id, 150)     
-
-        elif data["turn"] == 1:
-            data["turn"] = 4
-            Container.updateGame(payload.message_id, json.dumps(data))
-            if data["playerTwo"] == payload.member.id:
-                for x in range(3):
-                    try:
-                        if grid[x][emojis[x].index(payload.emoji.name)] == 0:
-                            grid[x][emojis[x].index(payload.emoji.name)] = 2
-                            data["turn"] = 0
-                            await self.TTT_updateGrid(grid,msg)
-                            break
-                        else:
-                            data["turn"] = 0
-                    except ValueError:
-                        ignore_errors
-                if self.TTT_checkWin(grid, 2) == True:
-                    data["turn"] = 3
-                    data["winner"] = payload.member.id
-                    self.Manager.updateAccountCoins(payload.member.id, 150)     
-            
-        #If bot's turn generate random position
-        if data["turn"] == 1 and data["playerTwo"] == 0:
-
-            data["turn"] = 4
-            Container.updateGame(payload.message_id, json.dumps(data))
-
-            #check for open spaces
-            valid = True
-            for row in grid:
-                if 0 in row:
-                    valid = False
-
-            #random move until valid one taken
-            while valid == False:
-                x = random.randint(0,2)
-                y = random.randint(0,2)
-                if grid[x][y] == 0:
-                    valid = True
-                    
-            grid[x][y] = 2
-            data["turn"] = 0
-            if self.TTT_checkWin(grid, 2) == True:
-                    data["turn"] = 3
-                    data["winner"] = 0
-
-
-        draw = 1
-        for row in grid:
-            if 0 in row:
-                draw = 0
-        if draw == 1 and data["turn"] != 3:
-            data["turn"] = 3
-            data["winner"] = 1
-
-        await self.TTT_updateGrid(grid, msg)
-
-        #check if there is a winner, update message accordingly
-        if data["turn"] == 3:
-            embedVar = msg.embeds[0]
-            newMsg = msg
-            txt = ""
-            for row in grid:
-                for column in row:
-                    if column == 0:
-                        txt += ":white_large_square:"
-                    elif column == 1:
-                        txt += ":white_check_mark:"
-                    elif column == 2:
-                        txt += ":negative_squared_cross_mark:"
-                txt += '\n'
-        
-            if data["winner"] == 0:
-                winner = "Computer"
-            elif data["winner"] == 1:
-                winner = "Draw"
-            else:
-                winner = f'<@{data["winner"]}>'
-
-            txt += f"Winner: {winner}"
-
-            embedVar.description = txt
-
-            await msg.edit(embed=embedVar)
-
-        data["grid"] = grid
-        Container.updateGame(payload.message_id, json.dumps(data))
+        #load individual game modules to objects
+        self.tictactoe = Tictactoe(Container, bot, self.Manager)
+        print("Initialised Play Command Cog")
 
     #Reaction listener, checks for reactions
     @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload):
         if payload.member.id != self.bot.user.id:
             record = Container.grabGame(payload.message_id)
-            game = record[1]
+            if record is not None:
+                game = record[1]
 
             #check game against gametype value
             if game == Games.TicTacToe.value:
-                await self.checkTTT(payload, record)
+                await self.tictactoe.checkTTT(payload, record)
 
+    #command definitions
     @commands.hybrid_command(name="tictactoe",aliases=["ttt","nc"])
     @app_commands.describe(player2="Enter the id of the second player")
     async def tictactoe(self, ctx: commands.Context, player2: str = "0"):
-        if type(ctx.interaction) != type(None):
-            await ctx.interaction.response.send_message(f"{ctx.author.mention} ran TicTacToe")
-        else:
-            await ctx.send(f"{ctx.author.mention} ran TicTacToe")
-        self.Manager.checkAccount(ctx.author.id)
-        #format player 2 ID (Removes <@>)
-        if len(player2) > 1 and '@' in player2:
-            player2 = int(player2[2:-1])
-            self.Manager.checkAccount(ctx.author.id)
-        if int(player2) == self.bot.user.id:
-            player2 = 0
-        grid = [[0,0,0],[0,0,0],[0,0,0]]
-        msg = ""
-        for x in range(3):
-            for y in range(3):
-                msg += ':white_large_square:'
-            msg += '\n'
-        embedVar = discord.Embed(title="TicTacToe", description=f"{msg}")
-        id = await ctx.channel.send(embed=embedVar)
-        reactions = ['1️⃣','2️⃣','3️⃣','4️⃣','5️⃣','6️⃣','7️⃣','8️⃣','9️⃣']
-        for emoji in reactions:
-            await id.add_reaction(emoji)
-        #make data dict in format {grid, creator, player2, gameState (Used as turn counter [0-1] and game finished flag [2])}
-        dat = {"grid":grid, "playerOne":ctx.author.id,"playerTwo":int(player2),"turn":0, "winner":""}
-        Container.addGame(gameID=id.id, gameType=Games.TicTacToe, data=json.dumps(dat))
+        await self.tictactoe.createGame(ctx, player2)
 
     @commands.command(name="ConnectFour",aliases=["c4","connect"])
     async def connectfour(self, ctx):
