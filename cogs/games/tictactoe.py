@@ -62,7 +62,7 @@ class Tictactoe:
         #if checks fail, no win
         return False
 
-    async def checkTTT(self, payload, record):
+    async def updateGame(self, payload, record):
         data = json.loads(record[2])
         #if game ended, don't bother doing anything else
         if data["turn"] == 3:
@@ -138,19 +138,52 @@ class Tictactoe:
             self.Container.updateGame(payload.message_id, json.dumps(data))
 
             #check for open spaces
-            valid = True
+            open = False
             for row in grid:
                 if 0 in row:
-                    valid = False
+                    open = True
 
-            #random move until valid one taken
-            while valid == False:
-                x = random.randint(0,2)
-                y = random.randint(0,2)
-                if grid[x][y] == 0:
-                    valid = True
+            moveMade = False
+            tmpGrid = [[],[],[]]
+            for i in range(3):
+                for j in range(3):
+                    tmpGrid[i].append(grid[i][j])
+ 
+            #check for winning places
+            for x in range(3):
+                for y in range(3):
                     
-            grid[x][y] = 2
+                    if tmpGrid[x][y] == 0:
+                        tmpGrid[x][y] = 2
+                        if self.checkWin(tmpGrid, 2) and not moveMade: 
+                            moveMade = True
+                            movX = x
+                            movY = y
+                        tmpGrid[x][y] = 0
+                        
+            for x in range(3):
+                for y in range(3):                    
+                    if tmpGrid[x][y] == 0:
+                        tmpGrid[x][y] = 1
+                        if self.checkWin(tmpGrid, 1) and not moveMade: 
+                            moveMade = True
+                            movX = x
+                            movY = y
+                        tmpGrid[x][y] = 0
+
+            if grid[1][1] == 0 and not moveMade:
+                moveMade = True
+                movX = 1
+                movY = 1
+            #random move until valid one taken
+            while open and not moveMade:
+                movX = random.randint(0,2)
+                movY = random.randint(0,2)
+                if grid[movX][movY] == 0:
+                    moveMade = True
+            if open:
+                grid[movX][movY] = 2
+
             data["turn"] = 0
             if self.checkWin(grid, 2) == True:
                     data["turn"] = 3
@@ -166,8 +199,6 @@ class Tictactoe:
         if draw == 1 and data["turn"] != 3:
             data["turn"] = 3
             data["winner"] = 1
-
-        #await self.TTT_updateGrid(grid, msg)
 
         #check if there is a winner, update message accordingly
         if data["turn"] == 3:
@@ -201,13 +232,18 @@ class Tictactoe:
         self.Container.updateGame(payload.message_id, json.dumps(data))
 
     async def createGame(self, ctx, player2):
+        
         if type(ctx.interaction) != type(None):
             await ctx.interaction.response.send_message(f"{ctx.author.mention} ran TicTacToe")
         else:
             await ctx.send(f"{ctx.author.mention} ran TicTacToe")
         self.Manager.checkAccount(ctx.author.id)
         #format player 2 ID (Removes <@>)
-        if len(player2) > 1 and '@' in player2:
+        if player2 == None:
+            player2 = "0"
+        elif type(player2) == discord.Member:
+            player2 = player2.id
+        elif len(player2) > 1 and '@' in player2:
             player2 = int(player2[2:-1])
             self.Manager.checkAccount(ctx.author.id)
         if int(player2) == self.bot.user.id:

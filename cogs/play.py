@@ -66,12 +66,12 @@ class Play(commands.Cog):
 
             #check game against gametype value
             if game == Games.TicTacToe.value:
-                await self.tictactoe.checkTTT(payload, record)
+                await self.tictactoe.updateGame(payload, record)
 
     #command definitions
     @commands.hybrid_command(name="tictactoe",aliases=["ttt","nc"])
     @app_commands.describe(player2="Enter the id of the second player")
-    async def tictactoe(self, ctx: commands.Context, player2: str = "0"):
+    async def tictactoe(self, ctx: commands.Context, player2: discord.Member = None):
         await self.tictactoe.createGame(ctx, player2)
 
     @commands.command(name="ConnectFour",aliases=["c4","connect"])

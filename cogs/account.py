@@ -23,7 +23,6 @@ class AccountManager:
     def checkAccount(self, accountID):
         self.cursor.execute(f'''SELECT * FROM accounts WHERE accountID = {accountID}''')
         account = self.cursor.fetchone()
-        print(accountID)
         if account is None:
             data = self.defaultDict
             data = json.dumps(data)
